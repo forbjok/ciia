@@ -1,0 +1,16 @@
+[package]
+name = "ciia"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.96"
+ctrlc = "3.4.5"
+dbus = "0.9.7"
+dirs = "6.0.0"
+gilrs = "0.11.0"
+serde = "1.0.218"
+serde_derive = "1.0.218"
+toml = "0.8.20"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
