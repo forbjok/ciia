@@ -5,6 +5,11 @@ use tracing::{debug, error, info};
 
 const DBUS_TIMEOUT: Duration = Duration::from_secs(10);
 
+const FREEDESKTOP_DEST: &str = "org.freedesktop.ScreenSaver";
+const FREEDESKTOP_PATH: &str = "/org/freedesktop/ScreenSaver";
+const FREEDESKTOP_INHIBIT_MEMBER: &str = "Inhibit";
+const FREEDESKTOP_UNINHIBIT_MEMBER: &str = "UnInhibit";
+
 thread_local! {
     static DBUS_SESSION_CONN: LazyCell<dbus::blocking::Connection> = LazyCell::new(|| {
         debug!("Connecting to D-Bus.");
@@ -40,10 +45,6 @@ impl Inhibitable for Inhibitor {
                     .inspect_err(|err| error!("Error executing command inhibitor: {}", err))?;
             }
             Inhibitor::FreeDesktop { cookie } => {
-                const DEST: &str = "org.freedesktop.ScreenSaver";
-                const PATH: &str = "/org/freedesktop/ScreenSaver";
-                const INHIBIT_MEMBER: &str = "Inhibit";
-
                 if cookie.is_some() {
                     return Ok(());
                 }
@@ -51,10 +52,14 @@ impl Inhibitable for Inhibitor {
                 debug!("Inhibiting FreeDesktop.");
 
                 DBUS_SESSION_CONN.with(|c| -> anyhow::Result<()> {
-                    let proxy = c.with_proxy(DEST, PATH, DBUS_TIMEOUT);
+                    let proxy = c.with_proxy(FREEDESKTOP_DEST, FREEDESKTOP_PATH, DBUS_TIMEOUT);
 
                     let (new_cookie,): (u32,) = proxy
-                        .method_call(DEST, INHIBIT_MEMBER, ("CIIA", "Controller input detected"))
+                        .method_call(
+                            FREEDESKTOP_DEST,
+                            FREEDESKTOP_INHIBIT_MEMBER,
+                            ("CIIA", "Controller input detected"),
+                        )
                         .context("Error inhibiting FreeDesktop")?;
 
                     *cookie = Some(new_cookie);
@@ -71,10 +76,6 @@ impl Inhibitable for Inhibitor {
         match self {
             Inhibitor::Command(_) => {}
             Inhibitor::FreeDesktop { cookie } => {
-                const DEST: &str = "org.freedesktop.ScreenSaver";
-                const PATH: &str = "/org/freedesktop/ScreenSaver";
-                const UNINHIBIT_MEMBER: &str = "UnInhibit";
-
                 let Some(cookie) = cookie.take() else {
                     return Ok(());
                 };
@@ -82,10 +83,10 @@ impl Inhibitable for Inhibitor {
                 debug!("Uninhibiting FreeDesktop.");
 
                 DBUS_SESSION_CONN.with(|c| -> anyhow::Result<()> {
-                    let proxy = c.with_proxy(DEST, PATH, DBUS_TIMEOUT);
+                    let proxy = c.with_proxy(FREEDESKTOP_DEST, FREEDESKTOP_PATH, DBUS_TIMEOUT);
 
                     let () = proxy
-                        .method_call(DEST, UNINHIBIT_MEMBER, (cookie,))
+                        .method_call(FREEDESKTOP_DEST, FREEDESKTOP_UNINHIBIT_MEMBER, (cookie,))
                         .context("Error uninhibiting FreeDesktop")?;
 
                     Ok(())
