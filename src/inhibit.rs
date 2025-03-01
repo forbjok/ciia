@@ -19,8 +19,13 @@ pub trait Inhibitable {
 
 pub enum Inhibitor {
     Command(Vec<&'static str>),
-    Kde,
-    Gnome { cookie: Option<u32> },
+    FreeDesktop { cookie: Option<u32> },
+}
+
+impl Inhibitor {
+    pub fn new_freedesktop() -> Self {
+        Self::FreeDesktop { cookie: None }
+    }
 }
 
 impl Inhibitable for Inhibitor {
@@ -34,21 +39,7 @@ impl Inhibitable for Inhibitor {
                     .status()
                     .inspect_err(|err| error!("Error executing command inhibitor: {}", err))?;
             }
-            Inhibitor::Kde => {
-                const DEST: &str = "org.freedesktop.ScreenSaver";
-                const PATH: &str = "/org/freedesktop/ScreenSaver";
-                const MEMBER: &str = "SimulateUserActivity";
-
-                DBUS_SESSION_CONN.with(|c| -> anyhow::Result<()> {
-                    let proxy = c.with_proxy(DEST, PATH, DBUS_TIMEOUT);
-                    let () = proxy
-                        .method_call(DEST, MEMBER, ())
-                        .context("Error executing KDE inhibitor")?;
-
-                    Ok(())
-                })?;
-            }
-            Inhibitor::Gnome { cookie } => {
+            Inhibitor::FreeDesktop { cookie } => {
                 const DEST: &str = "org.freedesktop.ScreenSaver";
                 const PATH: &str = "/org/freedesktop/ScreenSaver";
                 const INHIBIT_MEMBER: &str = "Inhibit";
@@ -57,14 +48,14 @@ impl Inhibitable for Inhibitor {
                     return Ok(());
                 }
 
-                debug!("Inhibiting GNOME.");
+                debug!("Inhibiting FreeDesktop.");
 
                 DBUS_SESSION_CONN.with(|c| -> anyhow::Result<()> {
                     let proxy = c.with_proxy(DEST, PATH, DBUS_TIMEOUT);
 
                     let (new_cookie,): (u32,) = proxy
-                        .method_call(DEST, INHIBIT_MEMBER, ("ciia", "Controller input detected"))
-                        .context("Error inhibiting GNOME")?;
+                        .method_call(DEST, INHIBIT_MEMBER, ("CIIA", "Controller input detected"))
+                        .context("Error inhibiting FreeDesktop")?;
 
                     *cookie = Some(new_cookie);
 
@@ -79,8 +70,7 @@ impl Inhibitable for Inhibitor {
     fn uninhibit(&mut self) -> anyhow::Result<()> {
         match self {
             Inhibitor::Command(_) => {}
-            Inhibitor::Kde => {}
-            Inhibitor::Gnome { cookie } => {
+            Inhibitor::FreeDesktop { cookie } => {
                 const DEST: &str = "org.freedesktop.ScreenSaver";
                 const PATH: &str = "/org/freedesktop/ScreenSaver";
                 const UNINHIBIT_MEMBER: &str = "UnInhibit";
@@ -89,14 +79,14 @@ impl Inhibitable for Inhibitor {
                     return Ok(());
                 };
 
-                debug!("Uninhibiting GNOME.");
+                debug!("Uninhibiting FreeDesktop.");
 
                 DBUS_SESSION_CONN.with(|c| -> anyhow::Result<()> {
                     let proxy = c.with_proxy(DEST, PATH, DBUS_TIMEOUT);
 
                     let () = proxy
                         .method_call(DEST, UNINHIBIT_MEMBER, (cookie,))
-                        .context("Error uninhibiting GNOME")?;
+                        .context("Error uninhibiting FreeDesktop")?;
 
                     Ok(())
                 })?;
@@ -138,12 +128,12 @@ pub fn autodetect_inhibitors() -> anyhow::Result<Vec<Inhibitor>> {
             "KDE" => {
                 info!("KDE desktop environment detected.");
 
-                inhibitors.push(Inhibitor::Kde);
+                inhibitors.push(Inhibitor::new_freedesktop());
             }
             "GNOME" => {
                 info!("GNOME desktop environment detected.");
 
-                inhibitors.push(Inhibitor::Gnome { cookie: None });
+                inhibitors.push(Inhibitor::new_freedesktop());
             }
             "XFCE" => {
                 info!("XFCE desktop environment detected.");
@@ -153,7 +143,7 @@ pub fn autodetect_inhibitors() -> anyhow::Result<Vec<Inhibitor>> {
             "X-Cinnamon" => {
                 info!("Cinnamon desktop environment detected.");
 
-                inhibitors.push(Inhibitor::Gnome { cookie: None });
+                inhibitors.push(Inhibitor::new_freedesktop());
             }
             _ => {}
         }
