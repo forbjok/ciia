@@ -42,7 +42,7 @@ impl Inhibitable for Inhibitor {
                 std::process::Command::new(program)
                     .args(args)
                     .status()
-                    .inspect_err(|err| error!("Error executing command inhibitor: {}", err))?;
+                    .context("Error executing command inhibitor")?;
             }
             Inhibitor::FreeDesktop { cookie } => {
                 if cookie.is_some() {
@@ -106,7 +106,9 @@ where
         info!("Inhibit!");
 
         for inhibitor in self.iter_mut() {
-            _ = inhibitor.inhibit();
+            if let Err(err) = inhibitor.inhibit() {
+                error!("{}", err);
+            }
         }
 
         Ok(())
@@ -114,7 +116,9 @@ where
 
     fn uninhibit(&mut self) -> anyhow::Result<()> {
         for inhibitor in self.iter_mut() {
-            _ = inhibitor.uninhibit();
+            if let Err(err) = inhibitor.uninhibit() {
+                error!("{}", err);
+            }
         }
 
         Ok(())
