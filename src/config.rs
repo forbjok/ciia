@@ -14,14 +14,14 @@ pub const CONFIG_FILENAME: &str = "config.toml";
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub interval: u64,
-    pub wake_cooldown: u64,
+    pub inhibit_frequency: u64,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             interval: 2,
-            wake_cooldown: 56,
+            inhibit_frequency: 56,
         }
     }
 }

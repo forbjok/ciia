@@ -1,6 +1,6 @@
 mod config;
 mod engine;
-mod wake;
+mod inhibit;
 
 use std::sync::{
     Arc,

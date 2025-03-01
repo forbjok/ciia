@@ -9,7 +9,10 @@ use std::{
 use gilrs::{Event, EventType, Gilrs};
 use tracing::{debug, info, trace};
 
-use crate::{config::Config, wake};
+use crate::{
+    config::Config,
+    inhibit::{self, Inhibitable as _},
+};
 
 /// Represents a running instance of a CIIA engine.
 pub struct Engine {
@@ -25,29 +28,22 @@ impl Engine {
 
 /// Run CIIA engine
 pub fn run(config: &Config, shutdown: Arc<AtomicBool>) -> anyhow::Result<Engine> {
-    let wakers = wake::autodetect_wakers()?;
+    let mut inhibitors = inhibit::autodetect_inhibitors()?;
 
     let interval = Duration::from_secs(config.interval);
-    let wake_cooldown = Duration::from_secs(config.wake_cooldown);
-
-    let wake = move || {
-        info!("Wake!");
-
-        for waker in wakers.iter() {
-            _ = waker.execute();
-        }
-    };
+    let inhibit_frequency = Duration::from_secs(config.inhibit_frequency);
 
     let join_handle = std::thread::spawn(move || {
         let mut gilrs = Gilrs::new().unwrap();
 
-        // Did we get an event since the last wake?
+        // Are we currently inhibiting?
+        let mut is_inhibiting = false;
+
+        // Did we detect user activity since the last inhibit?
         let mut user_activity_detected = false;
 
-        // Time when the last wake was performed
-        let mut last_wake_at: SystemTime = SystemTime::now();
-
-        wake();
+        // Time when the last inhibit was performed
+        let mut last_inhibit_at: SystemTime = SystemTime::UNIX_EPOCH;
 
         loop {
             if shutdown.load(Ordering::Relaxed) {
@@ -74,15 +70,19 @@ pub fn run(config: &Config, shutdown: Arc<AtomicBool>) -> anyhow::Result<Engine>
                 }
             }
 
-            if user_activity_detected {
-                let now = SystemTime::now();
+            let now = SystemTime::now();
 
-                if let Ok(since) = now.duration_since(last_wake_at) {
-                    if since > wake_cooldown {
-                        wake();
+            if let Ok(since) = now.duration_since(last_inhibit_at) {
+                if since > inhibit_frequency {
+                    if user_activity_detected {
+                        _ = inhibitors.inhibit();
 
+                        is_inhibiting = true;
                         user_activity_detected = false;
-                        last_wake_at = now;
+                        last_inhibit_at = now;
+                    } else if is_inhibiting {
+                        _ = inhibitors.uninhibit();
+                        is_inhibiting = false;
                     }
                 }
             }
