@@ -121,31 +121,49 @@ where
 }
 
 pub fn autodetect_inhibitors() -> anyhow::Result<Vec<Inhibitor>> {
-    let mut inhibitors = Vec::new();
+    enum Desktop {
+        Kde,
+        Gnome,
+        Xfce,
+        Cinnamon,
+    }
 
-    if let Ok(xcd) = env::var("XDG_CURRENT_DESKTOP") {
+    let desktop = if let Ok(xcd) = env::var("XDG_CURRENT_DESKTOP") {
         match xcd.as_str() {
             "KDE" => {
                 info!("KDE desktop environment detected.");
-
-                inhibitors.push(Inhibitor::new_freedesktop());
+                Some(Desktop::Kde)
             }
             "GNOME" => {
                 info!("GNOME desktop environment detected.");
-
-                inhibitors.push(Inhibitor::new_freedesktop());
+                Some(Desktop::Gnome)
             }
             "XFCE" => {
                 info!("XFCE desktop environment detected.");
-
-                inhibitors.push(Inhibitor::Command(vec!["xset", "s", "reset"]));
+                Some(Desktop::Xfce)
             }
             "X-Cinnamon" => {
                 info!("Cinnamon desktop environment detected.");
-
-                inhibitors.push(Inhibitor::new_freedesktop());
+                Some(Desktop::Cinnamon)
             }
-            _ => {}
+            _ => None,
+        }
+    } else {
+        None
+    };
+
+    if desktop.is_none() {
+        info!("No desktop environment detected. Using FreeDesktop inhibitor.");
+    }
+
+    let mut inhibitors = Vec::new();
+
+    match desktop {
+        None | Some(Desktop::Kde | Desktop::Gnome | Desktop::Cinnamon) => {
+            inhibitors.push(Inhibitor::new_freedesktop());
+        }
+        Some(Desktop::Xfce) => {
+            inhibitors.push(Inhibitor::Command(vec!["xset", "s", "reset"]));
         }
     }
 
