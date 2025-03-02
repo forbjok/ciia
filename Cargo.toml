@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["crates/ciia"]
+members = ["crates/ciia", "crates/idle-inhibit"]
 
 [workspace.dependencies]
 anyhow = "1.0.96"
