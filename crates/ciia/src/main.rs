@@ -1,6 +1,5 @@
 mod config;
 mod engine;
-mod inhibit;
 
 use std::sync::{
     Arc,
