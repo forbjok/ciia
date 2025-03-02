@@ -3,19 +3,12 @@ mod x11;
 
 use std::{cell::LazyCell, env, time::Duration};
 
-use tracing::{debug, info};
+use tracing::info;
 use x11::X11Inhibitor;
 
 pub use self::freedesktop::FreeDesktopInhibitor;
 
-const DBUS_TIMEOUT: Duration = Duration::from_secs(10);
-
 thread_local! {
-    static DBUS_SESSION_CONN: LazyCell<dbus::blocking::Connection> = LazyCell::new(|| {
-        debug!("Connecting to D-Bus.");
-        dbus::blocking::Connection::new_session().expect("Error connecting to D-Bus")
-    });
-
     static DESKTOP: LazyCell<Desktop> = LazyCell::new(|| {
         let desktop = if let Ok(xcd) = env::var("XDG_CURRENT_DESKTOP") {
             match xcd.as_str() {
