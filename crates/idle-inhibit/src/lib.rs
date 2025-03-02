@@ -50,6 +50,10 @@ thread_local! {
                     info!("MATE desktop environment detected.");
                     Desktop::Mate
                 }
+                "COSMIC" => {
+                    info!("COSMIC desktop environment detected.");
+                    Desktop::Cosmic
+                }
                 _ => Desktop::Unknown,
             }
         } else {
@@ -73,6 +77,7 @@ enum Desktop {
     Lxde,
     LxQt,
     Mate,
+    Cosmic,
     Unknown,
 }
 
@@ -91,7 +96,7 @@ impl Inhibitor {
         let desktop = DESKTOP.with(|d| **d);
 
         let inner = match desktop {
-            Desktop::Kde | Desktop::Gnome | Desktop::Cinnamon | Desktop::Unknown => {
+            Desktop::Kde | Desktop::Gnome | Desktop::Cinnamon | Desktop::Unknown | Desktop::Cosmic => {
                 InnerInhibitor::FreeDesktop(FreeDesktopInhibitor::new(program, reason)?)
             }
             Desktop::Xfce | Desktop::Lxde | Desktop::LxQt | Desktop::Mate => {
