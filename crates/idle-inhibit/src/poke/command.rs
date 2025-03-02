@@ -1,17 +1,17 @@
 use anyhow::Context;
 
-use crate::poke::PokeImpl;
+use crate::poke::Poker;
 
-pub trait CommandPokeImpl: PokeImpl {
+pub trait CommandPoker: Poker {
     const PROGRAM: &str;
     const ARGS: &[&str];
 }
 
-impl<T> PokeImpl for T
+impl<T> Poker for T
 where
-    T: CommandPokeImpl,
+    T: CommandPoker,
 {
-    fn poke() -> anyhow::Result<()> {
+    fn poke(&mut self) -> anyhow::Result<()> {
         std::process::Command::new(Self::PROGRAM)
             .args(Self::ARGS)
             .status()

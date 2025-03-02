@@ -1,4 +1,3 @@
-mod command;
 mod freedesktop;
 mod poke;
 mod xset;

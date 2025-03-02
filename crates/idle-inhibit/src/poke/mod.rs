@@ -1,3 +1,5 @@
+pub mod command;
+
 use std::{
     marker::PhantomData,
     sync::{
@@ -12,27 +14,30 @@ use tracing::error;
 
 const SLEEP_DURATION: Duration = Duration::from_secs(1);
 
-pub trait PokeImpl {
-    fn poke() -> anyhow::Result<()>;
+pub trait Poker: 'static + Send {
+    fn poke(&mut self) -> anyhow::Result<()>;
 }
 
-pub struct PokeInhibitor<PI>
+/// Inhibitor that works by "poking" some sort of service periodically
+/// to let it know that the system is not idle.
+pub struct PokeInhibitor<P>
 where
-    PI: PokeImpl,
+    P: Poker,
 {
     cancel: Arc<AtomicBool>,
     join_handle: Option<thread::JoinHandle<()>>,
-    _poke_impl: PhantomData<PI>,
+    _poker: PhantomData<P>,
 }
 
-impl<PI> PokeInhibitor<PI>
+impl<P> PokeInhibitor<P>
 where
-    PI: PokeImpl,
+    P: Poker,
 {
-    pub fn new(frequency: Duration) -> anyhow::Result<Self> {
+    pub fn new(poker: P, frequency: Duration) -> anyhow::Result<Self> {
         let cancel = Arc::new(AtomicBool::new(false));
 
         let join_handle = {
+            let mut poker = poker;
             let cancel = cancel.clone();
 
             let mut last_poke: Option<Instant> = None;
@@ -51,7 +56,7 @@ where
                         continue;
                     }
 
-                    if let Err(err) = PI::poke() {
+                    if let Err(err) = poker.poke() {
                         error!("Poke error: {}", err);
                         break;
                     }
@@ -64,14 +69,14 @@ where
         Ok(Self {
             cancel,
             join_handle,
-            _poke_impl: Default::default(),
+            _poker: Default::default(),
         })
     }
 }
 
-impl<PI> Drop for PokeInhibitor<PI>
+impl<P> Drop for PokeInhibitor<P>
 where
-    PI: PokeImpl,
+    P: Poker,
 {
     fn drop(&mut self) {
         let Some(join_handle) = self.join_handle.take() else {
