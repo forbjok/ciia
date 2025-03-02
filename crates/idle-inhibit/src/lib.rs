@@ -1,16 +1,12 @@
 mod freedesktop;
-mod poke;
 mod x11;
-mod xset;
 
 use std::{cell::LazyCell, env, time::Duration};
 
 use tracing::{debug, info};
 use x11::X11Inhibitor;
-use xset::XsetInhibitor;
 
 pub use self::freedesktop::FreeDesktopInhibitor;
-pub use self::poke::PokeInhibitor;
 
 const DBUS_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -86,7 +82,6 @@ enum Desktop {
 enum InnerInhibitor {
     FreeDesktop(FreeDesktopInhibitor),
     X11(X11Inhibitor),
-    Xset(XsetInhibitor),
 }
 
 pub struct Inhibitor {
