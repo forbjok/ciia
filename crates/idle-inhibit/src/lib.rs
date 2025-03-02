@@ -4,9 +4,9 @@ mod x11;
 use std::{cell::LazyCell, env, time::Duration};
 
 use tracing::info;
-use x11::X11Inhibitor;
 
 pub use self::freedesktop::FreeDesktopInhibitor;
+pub use self::x11::X11Inhibitor;
 
 thread_local! {
     static DESKTOP: LazyCell<Desktop> = LazyCell::new(|| {
