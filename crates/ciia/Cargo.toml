@@ -8,6 +8,7 @@ edition = "2024"
 [dependencies]
 anyhow = { workspace = true }
 ctrlc = { workspace = true }
+dbus = { workspace = true }
 dirs = { workspace = true }
 gilrs = { workspace = true }
 idle-inhibit = { path = "../idle-inhibit" }
