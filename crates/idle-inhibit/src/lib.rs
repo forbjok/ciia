@@ -42,6 +42,10 @@ thread_local! {
                     info!("LXDE desktop environment detected.");
                     Desktop::Lxde
                 }
+                "LXQt" => {
+                    info!("LXQt desktop environment detected.");
+                    Desktop::LxQt
+                }
                 _ => Desktop::Unknown,
             }
         } else {
@@ -63,6 +67,7 @@ enum Desktop {
     Xfce,
     Cinnamon,
     Lxde,
+    LxQt,
     Unknown,
 }
 
@@ -84,7 +89,7 @@ impl Inhibitor {
             Desktop::Kde | Desktop::Gnome | Desktop::Cinnamon | Desktop::Unknown => {
                 InnerInhibitor::FreeDesktop(FreeDesktopInhibitor::new(program, reason)?)
             }
-            Desktop::Xfce | Desktop::Lxde => InnerInhibitor::Xset(XsetInhibitor::new(frequency)?),
+            Desktop::Xfce | Desktop::Lxde | Desktop::LxQt => InnerInhibitor::Xset(XsetInhibitor::new(frequency)?),
         };
 
         Ok(Self { _inner: inner })
