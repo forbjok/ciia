@@ -8,6 +8,10 @@ const PATH: &str = "/org/freedesktop/ScreenSaver";
 const INHIBIT_MEMBER: &str = "Inhibit";
 const UNINHIBIT_MEMBER: &str = "UnInhibit";
 
+/// Inhibitor that uses the FreeDesktop idle inhibition spec to inhibit idle behavior.
+/// https://specifications.freedesktop.org/idle-inhibit-spec/latest/
+///
+/// Known to work with modern versions of KDE, GNOME, Cinnamon and COSMIC.
 pub struct FreeDesktopInhibitor {
     cookie: Option<u32>,
 }

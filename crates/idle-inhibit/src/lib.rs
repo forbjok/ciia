@@ -1,10 +1,12 @@
 mod freedesktop;
 mod poke;
+mod x11;
 mod xset;
 
 use std::{cell::LazyCell, env, time::Duration};
 
 use tracing::{debug, info};
+use x11::X11Inhibitor;
 use xset::XsetInhibitor;
 
 pub use self::freedesktop::FreeDesktopInhibitor;
@@ -83,6 +85,7 @@ enum Desktop {
 #[allow(dead_code)]
 enum InnerInhibitor {
     FreeDesktop(FreeDesktopInhibitor),
+    X11(X11Inhibitor),
     Xset(XsetInhibitor),
 }
 
@@ -91,16 +94,14 @@ pub struct Inhibitor {
 }
 
 impl Inhibitor {
-    pub fn new(program: &str, reason: &str, frequency: Duration) -> anyhow::Result<Self> {
+    pub fn new(program: &str, reason: &str, _frequency: Duration) -> anyhow::Result<Self> {
         let desktop = DESKTOP.with(|d| **d);
 
         let inner = match desktop {
             Desktop::Kde | Desktop::Gnome | Desktop::Cinnamon | Desktop::Unknown | Desktop::Cosmic => {
                 InnerInhibitor::FreeDesktop(FreeDesktopInhibitor::new(program, reason)?)
             }
-            Desktop::Xfce | Desktop::Lxde | Desktop::LxQt | Desktop::Mate => {
-                InnerInhibitor::Xset(XsetInhibitor::new(frequency)?)
-            }
+            Desktop::Xfce | Desktop::Lxde | Desktop::LxQt | Desktop::Mate => InnerInhibitor::X11(X11Inhibitor::new()?),
         };
 
         Ok(Self { _inner: inner })

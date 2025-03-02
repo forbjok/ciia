@@ -7,3 +7,4 @@ edition = "2024"
 anyhow = { workspace = true }
 dbus = { workspace = true }
 tracing = { workspace = true }
+x11rb = { workspace = true, features = ["screensaver"] }

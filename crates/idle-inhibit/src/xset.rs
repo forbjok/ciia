@@ -16,6 +16,7 @@ impl CommandPoker for XsetPoker {
 pub struct XsetInhibitor(#[allow(dead_code)] PokeInhibitor<XsetPoker>);
 
 impl XsetInhibitor {
+    #[allow(dead_code)]
     pub fn new(frequency: Duration) -> anyhow::Result<Self> {
         debug!("Inhibiting X11 using xset.");
 
