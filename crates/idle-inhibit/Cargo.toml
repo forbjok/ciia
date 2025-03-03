@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = { workspace = true }
-dbus = { workspace = true }
+dbus = { workspace = true, optional = true }
 tracing = { workspace = true }
-x11rb = { workspace = true, features = ["screensaver"] }
+windows = { workspace = true, features = ["Win32_System_Power"] }
+x11rb = { workspace = true, features = ["screensaver"], optional = true }

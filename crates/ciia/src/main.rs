@@ -1,42 +1,47 @@
+#[cfg(windows)]
+mod app;
 mod config;
 mod engine;
+mod session;
 
-use std::{
-    cell::LazyCell,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
 };
 
 use config::Config;
-use dbus::blocking::stdintf::org_freedesktop_dbus::RequestNameReply;
 use tracing::{error, info};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
-
-thread_local! {
-    static DBUS_SESSION_CONN: LazyCell<dbus::blocking::Connection> = LazyCell::new(|| {
-        dbus::blocking::Connection::new_session().expect("Error connecting to D-Bus")
-    });
-}
 
 fn main() -> anyhow::Result<()> {
     // Initialize logging
     initialize_logging();
 
-    // Try to connect to D-Bus to check whether an instance is already running in this session.
-    let _dbus_session_conn = if let Ok(dbus_session_conn) = dbus::blocking::Connection::new_session() {
-        if let Ok(reply) = dbus_session_conn.request_name("org.forbsoft.CIIA", false, false, true) {
-            if reply == RequestNameReply::Exists {
-                info!("Another instance of CIIA is already running in this session. Exiting.");
-                return Ok(());
-            }
-        }
-
-        Some(dbus_session_conn)
-    } else {
-        None
+    let Some(_instance) = session::session()? else {
+        info!("Another instance of CIIA is already running in this session. Exiting.");
+        return Ok(());
     };
+
+    let _app = app::main();
+
+    let mut gilrs = gilrs::Gilrs::new().unwrap();
+    /*
+    let mut gilrs = {
+        let b = gilrs::GilrsBuilder::new()
+        .with_default_filters(false)
+        .set_update_state(false);
+
+        b.build().unwrap()
+    }; */
+    loop {
+        //dbg!(".");
+        while let Some(ev) =
+            gilrs::Filter::filter_ev(&gilrs.next_event(), &gilrs::ev::filter::axis_dpad_to_button, &mut gilrs)
+        {
+            dbg!("EventX", &ev);
+            gilrs.update(&ev);
+        }
+    }
 
     // Shutdown signal
     let shutdown = Arc::new(AtomicBool::new(false));

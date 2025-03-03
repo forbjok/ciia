@@ -30,7 +30,11 @@ pub fn run(config: &Config, shutdown: Arc<AtomicBool>) -> anyhow::Result<Engine>
     let interval = Duration::from_secs(config.interval);
     let inhibit_frequency = Duration::from_secs(config.inhibit_frequency);
 
-    _ = idle_inhibit::desktop();
+    #[cfg(unix)]
+    {
+        // Force immediate desktop environment detection
+        _ = idle_inhibit::unix::desktop();
+    }
 
     let join_handle = thread::spawn(move || {
         let mut gilrs = Gilrs::new().unwrap();
