@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build:
+          - stable
+          - nightly
+
+        include:
+          - build: stable
+            os: ubuntu-latest
+            toolchain: stable
+
+          - build: nightly
+            os: ubuntu-latest
+            toolchain: nightly
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install required packages
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get install -y libdbus-1-dev libudev-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          targets: ${{ matrix.target }}
+
+      - name: Run tests
+        run: cargo test ${{ matrix.options }} --verbose
