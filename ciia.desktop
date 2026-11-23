@@ -1,8 +1,9 @@
 [Desktop Entry]
-Type=Application
-Exec=ciia
 Name=Controller Input Is Activity
 Comment=Prevent power saving functions and screensavers from interfering while using a controller.
-Icon=input-gaming
+Exec=ciia
+Icon=ciia
+Type=Application
+Categories=Utility
 StartupNotify=true
 Terminal=false
